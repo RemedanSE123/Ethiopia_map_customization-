@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 79% 46%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 224 76% 48%;
+
+    --radius: 0.5rem;
+
+    /* Map colors */
+    --region-color: 210 79% 46%;
+    --zone-color: 145 63% 49%;
+    --woreda-color: 28 80% 52%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Interactive elements */
+.interactive-card {
+  @apply transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 border-primary/20;
+}
+
+.interactive-badge {
+  @apply transition-all duration-200 hover:scale-105;
+}
+
+.map-container {
+  @apply relative overflow-hidden rounded-lg border border-primary/20 bg-secondary/50 shadow-inner shadow-black/20;
+}
+
+.map-overlay {
+  @apply absolute inset-0 bg-gradient-to-b from-transparent to-background/10 pointer-events-none;
+}
+
+/* Selection controls */
+.selection-control {
+  @apply bg-secondary/80 border-primary/20 rounded-lg p-4 shadow-md transition-all duration-300;
+}
+
+.selection-control:hover {
+  @apply bg-secondary shadow-lg shadow-primary/10;
+}
+
+/* Button enhancements */
+.btn-primary {
+  @apply bg-primary hover:bg-primary/90 text-white shadow-md hover:shadow-lg transition-all duration-300;
+}
+
+.btn-outline {
+  @apply border-primary/20 text-primary hover:bg-primary/10 transition-all duration-300;
+}
+
+/* Tooltip styles */
+.tooltip {
+  @apply bg-card border border-primary/20 shadow-lg shadow-black/30 rounded-md p-2 text-sm;
+}
+
+/* Breadcrumb styles */
+.breadcrumb {
+  @apply flex items-center text-sm font-medium;
+}
+
+.breadcrumb-item {
+  @apply cursor-pointer hover:text-primary transition-colors;
+}
+
+.breadcrumb-separator {
+  @apply mx-2 text-muted-foreground;
+}
+
+/* Feature list item */
+.feature-list-item {
+  @apply p-2 border border-primary/10 rounded-md mb-2 cursor-pointer hover:bg-primary/10 transition-colors;
+}
+
+.feature-list-item.active {
+  @apply bg-primary/20 border-primary;
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.transition-delay-100 {
+  transition-delay: 100ms;
+}
+
+.transition-delay-200 {
+  transition-delay: 200ms;
+}
+
+.transition-delay-300 {
+  transition-delay: 300ms;
+}
+
+.transition-delay-400 {
+  transition-delay: 400ms;
+}
