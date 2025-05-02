@@ -19,7 +19,6 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowRight,
-  Info,
   HelpCircle,
   Flag,
   Star,
@@ -94,7 +93,6 @@ import {
 } from "lucide-react"
 import { motion } from "framer-motion"
 import { Slider } from "@/components/ui/slider"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -211,6 +209,11 @@ interface MarkerEditorProps {
     glowEffect?: boolean
     glowColor?: string
     iconSize?: number
+    labelFont?: string
+    labelBold?: boolean
+    labelItalic?: boolean
+    labelUnderline?: boolean
+    labelOpacity?: number
   }>
   onAddMarker: (marker: any) => void
   onUpdateMarker: (index: number, marker: any) => void
@@ -219,6 +222,40 @@ interface MarkerEditorProps {
   setClickPosition?: (position: { lat: number; lng: number } | null) => void
 }
 
+/**
+ * MarkerEditor component allows users to add, edit, and manage markers on a map.
+ * It provides a user interface for customizing marker properties such as position,
+ * shape, size, color, and advanced effects. Users can interact with the map to place
+ * markers or manually input coordinates.
+ *
+ * @component
+ * @param {MarkerEditorProps} props - The props for the MarkerEditor component.
+ * @param {Array} props.markers - An array of existing markers to display and manage.
+ * @param {Function} props.onAddMarker - Callback function triggered when a new marker is added.
+ * @param {Function} props.onUpdateMarker - Callback function triggered when an existing marker is updated.
+ * @param {Function} props.onRemoveMarker - Callback function triggered when a marker is removed.
+ * @param {Object} props.clickPosition - The current click position on the map (latitude and longitude).
+ * @param {Function} props.setClickPosition - Function to update the click position on the map.
+ *
+ * @returns {JSX.Element} The MarkerEditor component.
+ *
+ * @example
+ * <MarkerEditor
+ *   markers={markers}
+ *   onAddMarker={handleAddMarker}
+ *   onUpdateMarker={handleUpdateMarker}
+ *   onRemoveMarker={handleRemoveMarker}
+ *   clickPosition={clickPosition}
+ *   setClickPosition={setClickPosition}
+ * />
+ *
+ * @remarks
+ * - The component supports advanced marker customization, including animations, borders, shadows, and labels.
+ * - Users can toggle between map click input and manual coordinate input for marker placement.
+ * - Markers are categorized into various types such as basic shapes, arrows, places, transport, nature, and more.
+ *
+ * @see MarkerEditorProps
+ */
 export function MarkerEditor({
   markers,
   onAddMarker,
@@ -250,6 +287,11 @@ export function MarkerEditor({
     glowEffect: boolean
     glowColor: string
     iconSize: number
+    labelFont: string
+    labelBold: boolean
+    labelItalic: boolean
+    labelUnderline: boolean
+    labelOpacity: number
   }>({
     lat: clickPosition?.lat || 0,
     lng: clickPosition?.lng || 0,
@@ -273,6 +315,11 @@ export function MarkerEditor({
     glowEffect: false,
     glowColor: "#ffff00",
     iconSize: 12,
+    labelFont: "Arial",
+    labelBold: false,
+    labelItalic: false,
+    labelUnderline: false,
+    labelOpacity: 1,
   })
 
   const [editingMarkerIndex, setEditingMarkerIndex] = useState<number | null>(null)
@@ -340,9 +387,16 @@ export function MarkerEditor({
       glowEffect: marker.glowEffect || false,
       glowColor: marker.glowColor || "#ffff00",
       iconSize: marker.iconSize || 12,
+      labelFont: marker.labelFont || "Arial",
+      labelBold: marker.labelBold || false,
+      labelItalic: marker.labelItalic || false,
+      labelUnderline: marker.labelUnderline || false,
+      labelOpacity: marker.labelOpacity !== undefined ? marker.labelOpacity : 1,
     })
     setEditingMarkerIndex(index)
-    setShowAdvancedOptions(true)
+    // Don't automatically expand advanced options
+    // setShowAdvancedOptions(false)
+    setShowAdvancedOptions(false)
 
     // Set the marker category based on the shape
     const shape = marker.shape || "pin"
@@ -640,8 +694,6 @@ export function MarkerEditor({
               </Tooltip>
             </TooltipProvider>
 
-           
-
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -753,8 +805,6 @@ export function MarkerEditor({
                 <TooltipContent>Dot</TooltipContent>
               </Tooltip>
             </TooltipProvider>
-
-         
 
             <TooltipProvider>
               <Tooltip>
@@ -1721,16 +1771,6 @@ export function MarkerEditor({
           </div>
         )}
 
-        <div>
-          <Label className="text-xs">Icon Size</Label>
-          <Input
-            type="number"
-            value={newMarker.iconSize}
-            onChange={(e) => setNewMarker({ ...newMarker, iconSize: Number(e.target.value) })}
-            min="8"
-            max="24"
-          />
-        </div>
       </div>
     )
   }
@@ -1830,99 +1870,164 @@ export function MarkerEditor({
                     />
                   </div>
                 </div>
+                
                 <div>
-                  <Label className="text-xs">Label Size</Label>
-                  <Input
-                    type="number"
-                    value={newMarker.labelSize}
-                    onChange={(e) => setNewMarker({ ...newMarker, labelSize: Number(e.target.value) })}
-                    min="8"
-                    max="24"
-                  />
-                </div>
+  <Label className="text-xs">Label Size</Label>
+  <Input
+    type="number"
+    value={newMarker.labelSize === 0 ? '' : newMarker.labelSize} // Show empty string by default
+    onChange={(e) => {
+      const rawValue = e.target.value.replace(/^0+/, ''); // Remove leading zeros
+      const value = rawValue === '' ? 0 : Number(rawValue); // Use 0 for empty input
+      setNewMarker({ ...newMarker, labelSize: value });
+    }}
+    onBlur={() => {
+      // Ensure value stays within min/max on blur
+      if (newMarker.labelSize < 0 || isNaN(newMarker.labelSize)) {
+        setNewMarker({ ...newMarker, labelSize: 0 });
+      } else if (newMarker.labelSize > 100) {
+        setNewMarker({ ...newMarker, labelSize: 100 });
+      }
+    }}
+    min="8"
+    max="100"
+  />
+</div>
+
+              </div>
+              <div>
+                    <Label className="text-xs">Label Position</Label>
+                    <div className="grid grid-cols-4 gap-2 mt-1">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant={newMarker.labelPosition === "top" ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setNewMarker({ ...newMarker, labelPosition: "top" })}
+                              className="flex-1"
+                            >
+                              <ArrowUp className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Top</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant={newMarker.labelPosition === "right" ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setNewMarker({ ...newMarker, labelPosition: "right" })}
+                              className="flex-1"
+                            >
+                              <ArrowRight className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Right</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant={newMarker.labelPosition === "bottom" ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setNewMarker({ ...newMarker, labelPosition: "bottom" })}
+                              className="flex-1"
+                            >
+                              <ArrowDown className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Bottom</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant={newMarker.labelPosition === "left" ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setNewMarker({ ...newMarker, labelPosition: "left" })}
+                              className="flex-1"
+                            >
+                              <ArrowLeft className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Left</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </div>
+                  <div>
+                <Label className="text-xs">Label Font</Label>
+                <Select
+                  value={newMarker.labelFont}
+                  onValueChange={(value) => setNewMarker({ ...newMarker, labelFont: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select font" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Arial">Arial</SelectItem>
+                    <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+                    <SelectItem value="Courier New">Courier New</SelectItem>
+                    <SelectItem value="Georgia">Georgia</SelectItem>
+                    <SelectItem value="Verdana">Verdana</SelectItem>
+                    <SelectItem value="Tahoma">Tahoma</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-start gap-4 mt-2">
+                <Button
+                  variant={newMarker.labelBold ? "default" : "outline"}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setNewMarker({ ...newMarker, labelBold: !newMarker.labelBold })}
+                  title="Bold"
+                >
+                  <span className="font-bold">B</span>
+                </Button>
+
+                <Button
+                  variant={newMarker.labelItalic ? "default" : "outline"}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setNewMarker({ ...newMarker, labelItalic: !newMarker.labelItalic })}
+                  title="Italic"
+                >
+                  <span className="italic">I</span>
+                </Button>
+
+                <Button
+                  variant={newMarker.labelUnderline ? "default" : "outline"}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setNewMarker({ ...newMarker, labelUnderline: !newMarker.labelUnderline })}
+                  title="Underline"
+                >
+                  <span className="underline">U</span>
+                </Button>
               </div>
 
               <div>
-                <Label className="text-xs flex items-center justify-between">
-                  <span>Label Position</span>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                        <HelpCircle className="h-4 w-4" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80">
-                      <div className="space-y-2">
-                        <h4 className="font-medium">Label Position</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Choose where the label appears relative to the marker:
-                        </p>
-                        <ul className="text-xs space-y-1 list-disc pl-4">
-                          <li>Top: Label appears above the marker (default)</li>
-                          <li>Bottom: Label appears below the marker</li>
-                          <li>Left: Label appears to the left of the marker</li>
-                          <li>Right: Label appears to the right of the marker</li>
-                        </ul>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </Label>
-                <RadioGroup
-                  value={newMarker.labelPosition}
-                  onValueChange={(value) =>
-                    setNewMarker({ ...newMarker, labelPosition: value as "top" | "bottom" | "left" | "right" })
-                  }
-                  className="grid grid-cols-4 gap-2 mt-1"
-                >
-                  <div className="flex items-center space-x-1">
-                    <RadioGroupItem value="top" id="label-top" className="sr-only" />
-                    <Label
-                      htmlFor="label-top"
-                      className={`flex items-center justify-center p-2 border rounded-md cursor-pointer ${
-                        newMarker.labelPosition === "top" ? "bg-primary text-primary-foreground" : "hover:bg-secondary"
-                      }`}
-                    >
-                      <ArrowUp className="h-4 w-4" />
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <RadioGroupItem value="bottom" id="label-bottom" className="sr-only" />
-                    <Label
-                      htmlFor="label-bottom"
-                      className={`flex items-center justify-center p-2 border rounded-md cursor-pointer ${
-                        newMarker.labelPosition === "bottom"
-                          ? "bg-primary text-primary-foreground"
-                          : "hover:bg-secondary"
-                      }`}
-                    >
-                      <ArrowDown className="h-4 w-4" />
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <RadioGroupItem value="left" id="label-left" className="sr-only" />
-                    <Label
-                      htmlFor="label-left"
-                      className={`flex items-center justify-center p-2 border rounded-md cursor-pointer ${
-                        newMarker.labelPosition === "left" ? "bg-primary text-primary-foreground" : "hover:bg-secondary"
-                      }`}
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <RadioGroupItem value="right" id="label-right" className="sr-only" />
-                    <Label
-                      htmlFor="label-right"
-                      className={`flex items-center justify-center p-2 border rounded-md cursor-pointer ${
-                        newMarker.labelPosition === "right"
-                          ? "bg-primary text-primary-foreground"
-                          : "hover:bg-secondary"
-                      }`}
-                    >
-                      <ArrowRight className="h-4 w-4" />
-                    </Label>
-                  </div>
-                </RadioGroup>
+                <Label className="text-xs">Label Opacity: {Math.round(newMarker.labelOpacity * 100)}%</Label>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[newMarker.labelOpacity]}
+                    min={0.1}
+                    max={1}
+                    step={0.1}
+                    onValueChange={(value) => setNewMarker({ ...newMarker, labelOpacity: value[0] })}
+                    className="flex-1"
+                  />
+                  <span className="text-xs w-10 text-right">{Math.round(newMarker.labelOpacity * 100)}%</span>
+                </div>
               </div>
 
               <div>
@@ -1944,16 +2049,30 @@ export function MarkerEditor({
             </div>
 
             <div className="space-y-3">
-              <div>
-                <Label className="text-xs">Size</Label>
-                <Input
-                  type="number"
-                  value={newMarker.size}
-                  onChange={(e) => setNewMarker({ ...newMarker, size: Number(e.target.value) })}
-                  min="4"
-                  max="20"
-                />
-              </div>
+              
+              
+            <div>
+  <Label className="text-xs">Icon Size</Label>
+  <Input
+    type="number"
+    value={newMarker.size === 0 ? '' : newMarker.size} // Show empty string by default
+    onChange={(e) => {
+      const rawValue = e.target.value.replace(/^0+/, ''); // Remove leading zeros
+      const value = rawValue === '' ? 0 : Number(rawValue); // Use 0 for empty input
+      setNewMarker({ ...newMarker, size: value });
+    }}
+    onBlur={() => {
+      // Ensure value stays within min/max on blur
+      if (newMarker.size < 4 || isNaN(newMarker.size)) {
+        setNewMarker({ ...newMarker, size: 0 }); // Keep empty if invalid or below min
+      } else if (newMarker.size > 1000) {
+        setNewMarker({ ...newMarker, size: 1000 }); // Cap at max
+      }
+    }}
+    min="4"
+    max="1000"
+  />
+</div>
 
               <div>
                 <Label className="text-xs">Opacity: {Math.round(newMarker.opacity * 100)}%</Label>
@@ -1978,10 +2097,16 @@ export function MarkerEditor({
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
+
                   <SelectContent>
                     <SelectItem value="basic">Basic Shapes</SelectItem>
                     <SelectItem value="arrows">Arrows & Directions</SelectItem>
-                   
+                    {/* <SelectItem value="places">Places & Locations</SelectItem> */}
+                    {/* <SelectItem value="transport">Transportation</SelectItem> */}
+                    {/* <SelectItem value="nature">Nature & Weather</SelectItem> */}
+                    {/* <SelectItem value="tech">Technology</SelectItem> */}
+                    {/* <SelectItem value="business">Business & People</SelectItem> */}
+                    <SelectItem value="misc">Miscellaneous</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -2168,7 +2293,10 @@ export function MarkerEditor({
                       </p>
                       {marker.label && (
                         <p>
-                          Label: {marker.label} ({marker.labelSize || 12}px, {marker.labelPosition || "top"})
+                          Label: {marker.label} ({marker.labelSize || 12}px, {marker.labelPosition || "top"}
+                          {marker.labelBold ? ", Bold" : ""}
+                          {marker.labelItalic ? ", Italic" : ""}
+                          {marker.labelUnderline ? ", Underline" : ""})
                         </p>
                       )}
                     </div>
@@ -2177,79 +2305,6 @@ export function MarkerEditor({
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      <Card className="border-primary/20 shadow-lg">
-        <CardHeader className="pb-2 bg-gradient-to-r from-primary/10 to-transparent">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Info className="h-5 w-5 text-primary" />
-            Marker Usage Guide
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-4">
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-secondary/20 p-3 rounded-lg">
-                <h3 className="font-medium text-sm mb-2 flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-primary" /> Standard Pins
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Best for marking specific locations. Choose from various pin styles including standard, solid,
-                  rounded, flat, and pulse pins.
-                </p>
-              </div>
-              <div className="bg-secondary/20 p-3 rounded-lg">
-                <h3 className="font-medium text-sm mb-2 flex items-center gap-2">
-                  <ArrowUp className="h-4 w-4 text-primary" /> Directional Markers
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Use arrows to indicate direction, flow, or movement. Available in all directions including up, down,
-                  left, right, and diagonals.
-                </p>
-              </div>
-              <div className="bg-secondary/20 p-3 rounded-lg">
-                <h3 className="font-medium text-sm mb-2 flex items-center gap-2">
-                  <Building className="h-4 w-4 text-primary" /> Place Markers
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Specialized icons for specific locations like buildings, landmarks, restaurants, shops, and more. Use
-                  these to indicate the type of place.
-                </p>
-              </div>
-              <div className="bg-secondary/20 p-3 rounded-lg">
-                <h3 className="font-medium text-sm mb-2 flex items-center gap-2">
-                  <div className="h-4 w-4 flex items-center justify-center font-bold">1</div> Numbered Markers
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Perfect for creating sequences or routes. Use numbered markers to indicate order or priority of
-                  locations on your map.
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-primary/10 p-3 rounded-lg">
-              <h3 className="font-medium text-sm mb-2">Advanced Marker Features</h3>
-              <p className="text-xs text-muted-foreground mb-2">
-                Enhance your markers with special effects and customizations:
-              </p>
-              <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
-                <li>
-                  <strong>Animation Effects:</strong> Add pulse, bounce, or glow effects to draw attention to important
-                  markers
-                </li>
-                <li>
-                  <strong>Rotation & Scale:</strong> Adjust the orientation and size of markers for better visibility
-                </li>
-                <li>
-                  <strong>Custom Styling:</strong> Add borders, shadows, and other visual enhancements
-                </li>
-                <li>
-                  <strong>Label Positioning:</strong> Place labels in optimal positions based on map content
-                </li>
-              </ul>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

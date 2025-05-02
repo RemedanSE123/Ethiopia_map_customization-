@@ -292,13 +292,7 @@ export default function Step2Customize({
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="bg-secondary/50 p-3 rounded-md flex items-start gap-2">
-                  <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <p className="text-sm">
-                    Click on a region, zone, or woreda on the map to customize its color individually. Changes will
-                    appear instantly.
-                  </p>
-                </div>
+               
 
                 <div>
                   <Label className="block text-sm font-medium mb-1">Region Default Color</Label>
@@ -461,19 +455,10 @@ export default function Step2Customize({
               />
             </div>
 
-            <div className="flex items-center justify-between">
-              <Label htmlFor="show-tooltips" className="text-sm font-medium">
-                Show Tooltips
-              </Label>
-              <Switch
-                id="show-tooltips"
-                checked={mapCustomization.showTooltips}
-                onCheckedChange={(checked) => updateMapCustomization("showTooltips", checked)}
-              />
-            </div>
+       
 
             <div>
-              <Label className="block text-sm font-medium mb-1">Base Map</Label>
+              <Label className="block text-sm font-medium mb-1">Map Bcakground</Label>
               <Select
                 value={mapCustomization.basemap}
                 onValueChange={(value) => updateMapCustomization("basemap", value)}
@@ -482,12 +467,11 @@ export default function Step2Customize({
                   <SelectValue placeholder="Select base map" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="streets">Street Map</SelectItem>
-                  <SelectItem value="satellite">Satellite Imagery</SelectItem>
-                  <SelectItem value="topographic">Topographic Map</SelectItem>
+                  <SelectItem value="streets"> Sky Blue</SelectItem>
+                  <SelectItem value="satellite">Dark Blue</SelectItem>
                   <SelectItem value="dark">Dark Mode</SelectItem>
                   <SelectItem value="light">Light Mode</SelectItem>
-                  <SelectItem value="terrain">Terrain</SelectItem>
+                  <SelectItem value="terrain">Light Blue</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -495,14 +479,8 @@ export default function Step2Customize({
 
           <TabsContent value="markers" className="p-4 space-y-6">
             <div className="space-y-2">
-              <h3 className="font-medium">Map Markers</h3>
-              <div className="bg-secondary/50 p-3 rounded-md flex items-start gap-2">
-                <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <p className="text-sm">
-                  Click anywhere on the map to place a marker. Then customize its appearance below and click "Add
-                  Marker".
-                </p>
-              </div>
+              
+              
             </div>
 
             <MarkerEditor

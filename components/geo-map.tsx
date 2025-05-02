@@ -4,7 +4,7 @@ import type React from "react"
 import { useEffect, useRef, useState } from "react"
 import type { GeoFeature } from "@/types/geo-types"
 import { Card, CardContent } from "@/components/ui/card"
-import { MapPin, Plus, Minus, Maximize } from "lucide-react"
+import { MapPin, Plus, Minus } from "lucide-react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 
@@ -32,6 +32,9 @@ interface GeoMapProps {
   className?: string
   highlightedFeature?: string | null
   showLabels?: boolean
+  showRegionLabels?: boolean
+  showZoneLabels?: boolean
+  showWoredaLabels?: boolean
   showTooltips?: boolean
   basemap?: string
   markers?: Array<{
@@ -142,11 +145,17 @@ interface GeoMapProps {
     glowEffect?: boolean
     glowColor?: string
     iconSize?: number
+    labelFont?: string
+    labelBold?: boolean
+    labelItalic?: boolean
+    labelUnderline?: boolean
+    labelOpacity?: number
   }>
   clipToSelection?: boolean
   onMapClick?: (lat: number, lng: number) => void
   step?: number
   activeTab?: string
+  customBgColor?: string
 }
 
 // Update the default props
@@ -161,6 +170,9 @@ export default function GeoMap({
   className,
   highlightedFeature,
   showLabels = false,
+  showRegionLabels = true,
+  showZoneLabels = true,
+  showWoredaLabels = true,
   showTooltips = true,
   basemap = "streets",
   markers = [],
@@ -168,6 +180,7 @@ export default function GeoMap({
   onMapClick,
   step = 1,
   activeTab = "colors",
+  ...props
 }: GeoMapProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [hoveredFeature, setHoveredFeature] = useState<GeoFeature | null>(null)
@@ -288,7 +301,7 @@ export default function GeoMap({
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     // Draw basemap background
-    drawBasemapBackground(ctx, canvas.width, canvas.height, basemap)
+    drawBasemapBackground(ctx, canvas.width, canvas.height, basemap, props.customBgColor)
 
     // Find bounds of all features
     let minX = Number.POSITIVE_INFINITY
@@ -425,7 +438,7 @@ export default function GeoMap({
       ctx.fill()
       ctx.stroke()
 
-      // Add labels if enabled
+      // Add labels if enabled - check specific level controls
       if (showLabels) {
         // Calculate center of feature for label placement
         let centerX = 0
@@ -456,8 +469,13 @@ export default function GeoMap({
           centerX /= pointCount
           centerY /= pointCount
 
-          // Only draw labels for larger features
-          if (level === "region" || (level === "zone" && scale > 0.5) || (level === "woreda" && scale > 1)) {
+          // Check if we should show labels for this specific level
+          const shouldShowLabel =
+            (level === "region" && showRegionLabels) ||
+            (level === "zone" && showZoneLabels && scale > 0.5) ||
+            (level === "woreda" && showWoredaLabels && scale > 1)
+
+          if (shouldShowLabel) {
             ctx.font = level === "region" ? "bold 12px Arial" : "10px Arial"
             ctx.fillStyle = "#fff"
             ctx.textAlign = "center"
@@ -504,6 +522,9 @@ export default function GeoMap({
     borders,
     highlightedFeature,
     showLabels,
+    showRegionLabels,
+    showZoneLabels,
+    showWoredaLabels,
     showTooltips,
     basemap,
     markers,
@@ -513,11 +534,10 @@ export default function GeoMap({
     mapLoaded,
     activeTab,
     animationFrame, // Add animation frame to trigger redraws for animations
+    props.customBgColor,
   ])
 
-  function drawZoomControls(ctx: CanvasRenderingContext2D, width: number, height: number) {
- 
-  }
+  function drawZoomControls(ctx: CanvasRenderingContext2D, width: number, height: number) {}
 
   // Update the drawMarker function to handle new marker types and effects
   function drawMarker(ctx: CanvasRenderingContext2D, x: number, y: number, marker: any, animationFrame: number) {
@@ -611,43 +631,39 @@ export default function GeoMap({
         }
         break
 
-        case "pin-solid":
-          // Set the fill color for the pin head
-          ctx.fillStyle = color;
-        
-          // Draw the pin head (circle)
-          ctx.beginPath();
-          ctx.arc(x, y, size * 1.2, 0, Math.PI * 2); // Circle at (x, y)
-          ctx.fill();
-        
-          // Add highlight to the pin head
-          ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-          ctx.beginPath();
-          ctx.arc(x - size * 0.4, y - size * 0.3, size * 0.4, 0, Math.PI * 2);
-          ctx.fill();
-        
-          // Reset fill color to original
-          ctx.fillStyle = color;
-        
-          // Draw the pin stem (a vertical solid line)
-          ctx.beginPath();
-          ctx.moveTo(x, y + size * 1.2); // Start from bottom of circle
-          ctx.lineTo(x, y + size * 2.5); // Go down vertically
-          ctx.lineWidth = size * 0.3;
-          ctx.strokeStyle = color;
-          ctx.stroke();
-        
-          // Add stroke around the pin head
-          ctx.strokeStyle = "rgba(0, 0, 0, 0.3)";
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.arc(x, y, size * 1.2, 0, Math.PI * 2);
-          ctx.stroke();
-          break;
-        
-        
-  
+      case "pin-solid":
+        // Set the fill color for the pin head
+        ctx.fillStyle = color
 
+        // Draw the pin head (circle)
+        ctx.beginPath()
+        ctx.arc(x, y, size * 1.2, 0, Math.PI * 2) // Circle at (x, y)
+        ctx.fill()
+
+        // Add highlight to the pin head
+        ctx.fillStyle = "rgba(255, 255, 255, 0.3)"
+        ctx.beginPath()
+        ctx.arc(x - size * 0.4, y - size * 0.3, size * 0.4, 0, Math.PI * 2)
+        ctx.fill()
+
+        // Reset fill color to original
+        ctx.fillStyle = color
+
+        // Draw the pin stem (a vertical solid line)
+        ctx.beginPath()
+        ctx.moveTo(x, y + size * 1.2) // Start from bottom of circle
+        ctx.lineTo(x, y + size * 2.5) // Go down vertically
+        ctx.lineWidth = size * 0.3
+        ctx.strokeStyle = color
+        ctx.stroke()
+
+        // Add stroke around the pin head
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.3)"
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.arc(x, y, size * 1.2, 0, Math.PI * 2)
+        ctx.stroke()
+        break
 
       case "circle":
         ctx.beginPath()
@@ -738,8 +754,11 @@ export default function GeoMap({
         break
 
       case "flag":
-        // Draw a flag
+        // Draw a flag with horizontal stripes and a star in the middle
         const flagpoleHeight = effectiveSize * 2
+        const flagHeight = effectiveSize
+        const stripeHeight = flagHeight / 3
+        const flagWidth = effectiveSize * 1.5
 
         // Draw flagpole
         ctx.beginPath()
@@ -749,31 +768,49 @@ export default function GeoMap({
         ctx.strokeStyle = "#888888"
         ctx.stroke()
 
-        // Draw flag
-        ctx.beginPath()
-        ctx.moveTo(x, effectiveY - flagpoleHeight)
-        ctx.lineTo(x + effectiveSize * 1.5, effectiveY - flagpoleHeight + effectiveSize * 0.5)
-        ctx.lineTo(x, effectiveY - flagpoleHeight + effectiveSize)
-        ctx.closePath()
-        ctx.fill()
+        // Coordinates for top-left corner of the flag
+        const flagTopY = effectiveY - flagpoleHeight
+        const flagLeftX = x
 
-        if (hasBorder) {
-          ctx.strokeStyle = borderColor
-          ctx.lineWidth = borderWidth
-          ctx.stroke()
+        // Draw green stripe (top)
+        ctx.fillStyle = "#008000" // green
+        ctx.fillRect(flagLeftX, flagTopY, flagWidth, stripeHeight)
+
+        // Draw yellow stripe (middle)
+        ctx.fillStyle = "#FFD700" // yellow
+        ctx.fillRect(flagLeftX, flagTopY + stripeHeight, flagWidth, stripeHeight)
+
+        // Draw red stripe (bottom)
+        ctx.fillStyle = "#FF0000" // red
+        ctx.fillRect(flagLeftX, flagTopY + 2 * stripeHeight, flagWidth, stripeHeight)
+
+        // Draw star in the middle of the yellow stripe
+        const starCenterX = flagLeftX + flagWidth / 2
+        const starCenterY = flagTopY + stripeHeight + stripeHeight / 2
+        const starOuterRadius = stripeHeight * 0.4
+        const starInnerRadius = starOuterRadius * 0.4
+        const spikes = 5
+
+        ctx.beginPath()
+        for (let i = 0; i < spikes * 2; i++) {
+          const angle = (i * Math.PI) / spikes
+          const radius = i % 2 === 0 ? starOuterRadius : starInnerRadius
+          const sx = starCenterX + Math.cos(angle - Math.PI / 2) * radius
+          const sy = starCenterY + Math.sin(angle - Math.PI / 2) * radius
+          if (i === 0) {
+            ctx.moveTo(sx, sy)
+          } else {
+            ctx.lineTo(sx, sy)
+          }
         }
-        break
-
-      case "dot":
-        // Simple dot
-        ctx.beginPath()
-        ctx.arc(x, effectiveY, effectiveSize * 0.8, 0, Math.PI * 2)
+        ctx.closePath()
+        ctx.fillStyle = "#0000FF" // blue star, like Ethiopia's flag
         ctx.fill()
 
         if (hasBorder) {
           ctx.strokeStyle = borderColor
           ctx.lineWidth = borderWidth
-          ctx.stroke()
+          ctx.strokeRect(flagLeftX, flagTopY, flagWidth, flagHeight)
         }
         break
 
@@ -816,6 +853,32 @@ export default function GeoMap({
         // Arrow stem
         ctx.beginPath()
         ctx.rect(x - effectiveSize * 0.3, effectiveY - effectiveSize * 0.5, effectiveSize * 0.6, effectiveSize * 1.5)
+        ctx.fill()
+
+        if (hasBorder) {
+          ctx.stroke()
+        }
+        break
+
+      case "arrow-down":
+        // Draw a down arrow
+        ctx.beginPath()
+        // Arrow head (pointing down)
+        ctx.moveTo(x, effectiveY + effectiveSize * 1.5)
+        ctx.lineTo(x - effectiveSize, effectiveY + effectiveSize * 0.5)
+        ctx.lineTo(x + effectiveSize, effectiveY + effectiveSize * 0.5)
+        ctx.closePath()
+        ctx.fill()
+
+        if (hasBorder) {
+          ctx.strokeStyle = borderColor
+          ctx.lineWidth = borderWidth
+          ctx.stroke()
+        }
+
+        // Arrow stem
+        ctx.beginPath()
+        ctx.rect(x - effectiveSize * 0.3, effectiveY - effectiveSize * 1.0, effectiveSize * 0.6, effectiveSize * 1.5)
         ctx.fill()
 
         if (hasBorder) {
@@ -1033,65 +1096,622 @@ export default function GeoMap({
         }
         break
 
-      // Add cases for other icon types
       case "home":
+        // Roof (triangle)
+        ctx.beginPath()
+        ctx.moveTo(x, effectiveY - effectiveSize * 1.5) // Top point
+        ctx.lineTo(x - effectiveSize, effectiveY - effectiveSize * 0.5)
+        ctx.lineTo(x + effectiveSize, effectiveY - effectiveSize * 0.5)
+        ctx.closePath()
+        ctx.fill()
+
+        if (hasBorder) {
+          ctx.strokeStyle = borderColor
+          ctx.lineWidth = borderWidth
+          ctx.stroke()
+        }
+
+        // Body (rectangle)
+        ctx.beginPath()
+        ctx.rect(x - effectiveSize * 0.8, effectiveY - effectiveSize * 0.5, effectiveSize * 1.6, effectiveSize * 1.5)
+        ctx.fill()
+
+        if (hasBorder) {
+          ctx.stroke()
+        }
+        break
+
       case "building":
+        // Main building structure
+        ctx.beginPath()
+        ctx.rect(x - effectiveSize * 0.8, effectiveY - effectiveSize * 1.5, effectiveSize * 1.6, effectiveSize * 2)
+        ctx.fill()
+
+        if (hasBorder) {
+          ctx.strokeStyle = borderColor
+          ctx.lineWidth = borderWidth
+          ctx.stroke()
+        }
+
+        // Optional: Add simple "windows"
+        ctx.fillStyle = "#ffffff"
+        const rows = 3,
+          cols = 2
+        const winWidth = effectiveSize * 0.3
+        const winHeight = effectiveSize * 0.3
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            ctx.beginPath()
+            ctx.rect(
+              x - effectiveSize * 0.6 + c * (winWidth + 4),
+              effectiveY - effectiveSize * 1.3 + r * (winHeight + 4),
+              winWidth,
+              winHeight,
+            )
+            ctx.fill()
+          }
+        }
+
+        break
+
       case "landmark":
+        // Base of the landmark (a wide pedestal)
+        ctx.beginPath()
+        ctx.rect(x - effectiveSize, effectiveY + effectiveSize * 0.5, effectiveSize * 2, effectiveSize * 0.3)
+        ctx.fill()
+
+        if (hasBorder) {
+          ctx.strokeStyle = borderColor
+          ctx.lineWidth = borderWidth
+          ctx.stroke()
+        }
+
+        // Column
+        ctx.beginPath()
+        ctx.rect(x - effectiveSize * 0.3, effectiveY - effectiveSize * 1.5, effectiveSize * 0.6, effectiveSize * 2)
+        ctx.fill()
+
+        if (hasBorder) {
+          ctx.stroke()
+        }
+
+        // Top part (like a torch or detail)
+        ctx.beginPath()
+        ctx.arc(x, effectiveY - effectiveSize * 1.6, effectiveSize * 0.4, 0, Math.PI * 2)
+        ctx.fill()
+
+        if (hasBorder) {
+          ctx.stroke()
+        }
+        break
+
       case "tent":
-      case "food":
-      case "shopping":
+        ctx.beginPath()
+        ctx.moveTo(x, y - size)
+        ctx.lineTo(x - size, y + size)
+        ctx.lineTo(x + size, y + size)
+        ctx.closePath()
+        ctx.fill()
+        break
+
+      case "food": // fork & knife icon
+        ctx.beginPath()
+        ctx.rect(x - size * 0.6, y - size, size * 0.2, size * 2)
+        ctx.rect(x + size * 0.4, y - size, size * 0.2, size * 2)
+        ctx.fill()
+        break
+
+      case "shopping": // shopping bag
+        ctx.beginPath()
+        ctx.rect(x - size, y - size * 0.5, size * 2, size * 1.5)
+        ctx.moveTo(x - size * 0.6, y - size * 0.5)
+        ctx.lineTo(x - size * 0.6, y - size * 1.2)
+        ctx.moveTo(x + size * 0.6, y - size * 0.5)
+        ctx.lineTo(x + size * 0.6, y - size * 1.2)
+        ctx.stroke()
+        break
+
       case "car":
+        ctx.beginPath()
+        ctx.rect(x - size, y - size * 0.5, size * 2, size)
+        ctx.fill()
+        ctx.beginPath()
+        ctx.arc(x - size * 0.6, y + size * 0.5, size * 0.3, 0, Math.PI * 2)
+        ctx.arc(x + size * 0.6, y + size * 0.5, size * 0.3, 0, Math.PI * 2)
+        ctx.fill()
+        break
+
       case "bus":
+        ctx.beginPath()
+        ctx.rect(x - size, y - size * 0.8, size * 2, size * 1.6)
+        ctx.fill()
+        ctx.beginPath()
+        ctx.arc(x - size * 0.6, y + size * 0.8, size * 0.3, 0, Math.PI * 2)
+        ctx.arc(x + size * 0.6, y + size * 0.8, size * 0.3, 0, Math.PI * 2)
+        ctx.fill()
+        break
+
       case "plane":
+        ctx.beginPath()
+        ctx.moveTo(x, y - size)
+        ctx.lineTo(x - size * 0.3, y + size * 0.5)
+        ctx.lineTo(x, y + size * 0.2)
+        ctx.lineTo(x + size * 0.3, y + size * 0.5)
+        ctx.closePath()
+        ctx.fill()
+        break
+
       case "ship":
+        ctx.beginPath()
+        ctx.rect(x - size * 0.4, y - size, size * 0.8, size * 1.2)
+        ctx.fill()
+        ctx.beginPath()
+        ctx.moveTo(x - size, y + size * 0.2)
+        ctx.lineTo(x + size, y + size * 0.2)
+        ctx.lineTo(x, y + size)
+        ctx.closePath()
+        ctx.fill()
+        break
+
       case "anchor":
-      case "bike":
+        ctx.beginPath()
+        ctx.arc(x, y - size * 0.8, size * 0.2, 0, Math.PI * 2)
+        ctx.moveTo(x, y - size * 0.6)
+        ctx.lineTo(x, y + size)
+        ctx.moveTo(x - size, y + size * 0.6)
+        ctx.arc(x, y + size, size, Math.PI, 0)
+        ctx.stroke()
+        break
+
       case "lightning":
+        ctx.beginPath()
+        ctx.moveTo(x, y - size)
+        ctx.lineTo(x - size * 0.3, y)
+        ctx.lineTo(x + size * 0.1, y)
+        ctx.lineTo(x - size * 0.2, y + size)
+        ctx.lineTo(x + size * 0.4, y)
+        ctx.lineTo(x, y)
+        ctx.closePath()
+        ctx.fill()
+        break
+
       case "water":
+        ctx.beginPath()
+        ctx.arc(x, y, size, Math.PI, 2 * Math.PI)
+        ctx.fill()
+        break
+
       case "fire":
-      case "snow":
-      case "cloud":
-      case "sun":
-      case "moon":
-      case "phone":
-      case "wifi":
-      case "radio":
-      case "camera":
-      case "image":
-      case "music":
-      case "video":
-      case "file":
-      case "mail":
-      case "call":
-      case "message":
-      case "people":
-      case "person":
-      case "add-person":
-      case "work":
-      case "clipboard":
-      case "calendar":
-      case "clock":
-      case "award":
-      case "gift":
-      case "coffee":
-      case "tools":
-      case "settings":
-      case "lock":
-      case "key":
-      case "search":
-      case "filter":
-      case "share":
-      case "download":
-      case "upload":
-      case "link":
-      case "trash":
-      case "save":
-      case "edit":
-      case "more":
-      case "alert":
-      case "check":
-      case "x-mark":
-      case "bookmark":
+        ctx.beginPath()
+        ctx.moveTo(x, y + size * 0.5)
+        ctx.bezierCurveTo(x - size, y, x - size * 0.5, y - size, x, y - size * 0.5)
+        ctx.bezierCurveTo(x + size * 0.5, y - size, x + size, y, x, y + size * 0.5)
+        ctx.fill()
+        break
+
+      case "snow": {
+        // Draw a snowflake with radiating arms, glow, and subtle rotation
+        ctx.save()
+        ctx.shadowColor = color
+        ctx.shadowBlur = 15
+
+        // Optional rotation animation (requires requestAnimationFrame)
+        // const rotation = Date.now() * 0.001
+        // ctx.translate(x, effectiveY)
+        // ctx.rotate(rotation)
+        // ctx.translate(-x, -effectiveY)
+
+        const arms = 6
+        const armLength = effectiveSize * 1.2
+        const innerLength = effectiveSize * 0.4
+
+        ctx.beginPath()
+        for (let i = 0; i < arms; i++) {
+          const angle = (i * Math.PI) / (arms / 2)
+          // Main arm
+          ctx.moveTo(x, effectiveY)
+          ctx.lineTo(x + Math.cos(angle) * armLength, effectiveY + Math.sin(angle) * armLength)
+          // Side branches
+          ctx.moveTo(x + Math.cos(angle) * innerLength, effectiveY + Math.sin(angle) * innerLength)
+          ctx.lineTo(
+            x + Math.cos(angle + Math.PI / 6) * innerLength * 0.5,
+            effectiveY + Math.sin(angle + Math.PI / 6) * innerLength * 0.5,
+          )
+          ctx.moveTo(x + Math.cos(angle) * innerLength, effectiveY + Math.sin(angle) * innerLength)
+          ctx.lineTo(
+            x + Math.cos(angle - Math.PI / 6) * innerLength * 0.5,
+            effectiveY + Math.sin(angle - Math.PI / 6) * innerLength * 0.5,
+          )
+        }
+        ctx.strokeStyle = color
+        ctx.lineWidth = effectiveSize * 0.15
+        ctx.stroke()
+
+        // Central glow
+        const snowGradient = ctx.createRadialGradient(x, effectiveY, 0, x, effectiveY, effectiveSize * 0.5)
+        snowGradient.addColorStop(0, "#ffffffcc")
+        snowGradient.addColorStop(1, `${color}66`)
+        ctx.beginPath()
+        ctx.arc(x, effectiveY, effectiveSize * 0.3, 0, Math.PI * 2)
+        ctx.fillStyle = snowGradient
+        ctx.fill()
+
+        if (hasBorder) {
+          ctx.strokeStyle = borderColor
+          ctx.lineWidth = borderWidth
+          ctx.stroke()
+        }
+
+        ctx.restore()
+        break
+      }
+
+      case "cloud": {
+        // Draw a fluffy cloud with glowing edges and subtle pulse
+        ctx.save()
+        ctx.shadowColor = color
+        ctx.shadowBlur = 20
+
+        // Optional pulse animation
+        // const pulse = 1 + 0.05 * Math.sin(Date.now() * 0.005)
+        // ctx.translate(x, effectiveY)
+        // ctx.scale(pulse, pulse)
+        // ctx.translate(-x, -effectiveY)
+
+        const cloudWidth = effectiveSize * 2
+        const cloudHeight = effectiveSize * 1.2
+
+        ctx.beginPath()
+        ctx.arc(x - cloudWidth * 0.3, effectiveY - cloudHeight * 0.2, effectiveSize * 0.6, Math.PI, 0)
+        ctx.arc(x, effectiveY - cloudHeight * 0.3, effectiveSize * 0.7, Math.PI, 0)
+        ctx.arc(x + cloudWidth * 0.3, effectiveY - cloudHeight * 0.2, effectiveSize * 0.6, Math.PI, 0)
+        ctx.arc(x, effectiveY + cloudHeight * 0.2, effectiveSize * 0.8, 0, Math.PI)
+        ctx.closePath()
+
+        const cloudGradient = ctx.createLinearGradient(x, effectiveY - cloudHeight, x, effectiveY + cloudHeight)
+        cloudGradient.addColorStop(0, `${color}ff`)
+        cloudGradient.addColorStop(1, `${color}99`)
+        ctx.fillStyle = cloudGradient
+        ctx.fill()
+
+        if (hasBorder) {
+          ctx.strokeStyle = borderColor
+          ctx.lineWidth = borderWidth
+          ctx.stroke()
+        }
+
+        ctx.restore()
+        break
+      }
+
+      case "sun": {
+        // Draw a radiant sun with glowing rays and rotation
+        ctx.save()
+        ctx.shadowColor = color
+        ctx.shadowBlur = 25
+
+        // Optional rotation animation
+        // const rotation = Date.now() * 0.002
+        // ctx.translate(x, effectiveY)
+        // ctx.rotate(rotation)
+        // ctx.translate(-x, -effectiveY)
+
+        const rays = 12
+        const rayLength = effectiveSize * 1.5
+        const innerRadius = effectiveSize * 0.6
+
+        ctx.beginPath()
+        for (let i = 0; i < rays; i++) {
+          const angle = (i * Math.PI) / (rays / 2)
+          ctx.moveTo(x + Math.cos(angle) * innerRadius, effectiveY + Math.sin(angle) * innerRadius)
+          ctx.lineTo(x + Math.cos(angle) * rayLength, effectiveY + Math.sin(angle) * rayLength)
+        }
+        ctx.strokeStyle = color
+        ctx.lineWidth = effectiveSize * 0.1
+        ctx.stroke()
+
+        const sunGradient = ctx.createRadialGradient(x, effectiveY, 0, x, effectiveY, innerRadius)
+        sunGradient.addColorStop(0, "#ffffffcc")
+        sunGradient.addColorStop(1, `${color}ff`)
+        ctx.beginPath()
+        ctx.arc(x, effectiveY, innerRadius, 0, Math.PI * 2)
+        ctx.fillStyle = sunGradient
+        ctx.fill()
+
+        if (hasBorder) {
+          ctx.strokeStyle = borderColor
+          ctx.lineWidth = borderWidth
+          ctx.stroke()
+        }
+
+        ctx.restore()
+        break
+      }
+
+      case "moon": {
+        // Draw a crescent moon with a glowing halo
+        ctx.save()
+        ctx.shadowColor = color
+        ctx.shadowBlur = 20
+
+        const radius = effectiveSize * 0.8
+        ctx.beginPath()
+        ctx.arc(x, effectiveY, radius, 0, Math.PI * 2)
+        ctx.arc(x + radius * 0.4, effectiveY, radius * 0.9, Math.PI, 2 * Math.PI, true)
+        ctx.closePath()
+
+        const moonGradient = ctx.createRadialGradient(x, effectiveY, 0, x, effectiveY, radius)
+        moonGradient.addColorStop(0, `${color}ff`)
+        moonGradient.addColorStop(1, `${color}66`)
+        ctx.fillStyle = moonGradient
+        ctx.fill()
+
+        if (hasBorder) {
+          ctx.strokeStyle = borderColor
+          ctx.lineWidth = borderWidth
+          ctx.stroke()
+        }
+
+        ctx.restore()
+        break
+      }
+
+      case "phone": {
+        // Draw a smartphone with a glowing screen and subtle pulse
+        ctx.save()
+        ctx.shadowColor = color
+        ctx.shadowBlur = 15
+
+        // Optional pulse animation
+        // const pulse = 1 + 0.05 * Math.sin(Date.now() * 0.005)
+        // ctx.translate(x, effectiveY)
+        // ctx.scale(pulse, pulse)
+        // ctx.translate(-x, -effectiveY)
+
+        const phoneWidth = effectiveSize * 0.8
+        const phoneHeight = effectiveSize * 1.6
+        ctx.beginPath()
+        ctx.rect(x - phoneWidth, effectiveY - phoneHeight, phoneWidth * 2, phoneHeight * 2)
+        ctx.fillStyle = color
+        ctx.fill()
+
+        // Screen glow
+        const phoneGradient = ctx.createLinearGradient(x, effectiveY - phoneHeight, x, effectiveY + phoneHeight)
+        phoneGradient.addColorStop(0, "#ffffffcc")
+        phoneGradient.addColorStop(1, `${color}66`)
+        ctx.beginPath()
+        ctx.rect(x - phoneWidth * 0.8, effectiveY - phoneHeight * 0.8, phoneWidth * 1.6, phoneHeight * 1.6)
+        ctx.fillStyle = phoneGradient
+        ctx.fill()
+
+        if (hasBorder) {
+          ctx.strokeStyle = borderColor
+          ctx.lineWidth = borderWidth
+          ctx.stroke()
+        }
+
+        ctx.restore()
+        break
+      }
+
+      case "wifi": {
+        // Draw a Wi-Fi signal with glowing arcs and pulsing dot
+        ctx.save()
+        ctx.shadowColor = color
+        ctx.shadowBlur = 20
+
+        const arcs = 3
+        ctx.beginPath()
+        for (let i = 0; i < arcs; i++) {
+          const radius = effectiveSize * (0.5 + i * 0.4)
+          ctx.arc(x, effectiveY + effectiveSize * 0.5, radius, Math.PI * 0.75, Math.PI * 1.25)
+        }
+        ctx.strokeStyle = color
+        ctx.lineWidth = effectiveSize * 0.15
+        ctx.stroke()
+
+        // Central dot
+        const wifiGradient = ctx.createRadialGradient(
+          x,
+          effectiveY + effectiveSize * 0.5,
+          0,
+          x,
+          effectiveY + effectiveSize * 0.5,
+          effectiveSize * 0.3,
+        )
+        wifiGradient.addColorStop(0, "#ffffffcc")
+        wifiGradient.addColorStop(1, `${color}66`)
+        ctx.beginPath()
+        ctx.arc(x, effectiveY + effectiveSize * 0.5, effectiveSize * 0.2, 0, Math.PI * 2)
+        ctx.fillStyle = wifiGradient
+        ctx.fill()
+
+        if (hasBorder) {
+          ctx.strokeStyle = borderColor
+          ctx.lineWidth = borderWidth
+          ctx.stroke()
+        }
+
+        ctx.restore()
+        break
+      }
+
+      case "alert": {
+        // Draw an alert triangle with a glowing exclamation and pulse
+        ctx.save()
+        ctx.shadowColor = color
+        ctx.shadowBlur = 20
+
+        // Optional pulse animation
+        // const pulse = 1 + 0.05 * Math.sin(Date.now() * 0.005)
+        // ctx.translate(x, effectiveY)
+        // ctx.scale(pulse, pulse)
+        // ctx.translate(-x, -effectiveY)
+
+        const side = effectiveSize * 1.5
+        ctx.beginPath()
+        ctx.moveTo(x, effectiveY - side)
+        ctx.lineTo(x - side * 0.866, effectiveY + side * 0.5)
+        ctx.lineTo(x + side * 0.866, effectiveY + side * 0.5)
+        ctx.closePath()
+
+        const alertGradient = ctx.createLinearGradient(x, effectiveY - side, x, effectiveY + side)
+        alertGradient.addColorStop(0, `${color}ff`)
+        alertGradient.addColorStop(1, `${color}99`)
+        ctx.fillStyle = alertGradient
+        ctx.fill()
+
+        // Exclamation mark
+        ctx.beginPath()
+        ctx.rect(x - effectiveSize * 0.1, effectiveY - side * 0.5, effectiveSize * 0.2, side * 0.6)
+        ctx.arc(x, effectiveY + side * 0.3, effectiveSize * 0.1, 0, Math.PI * 2)
+        ctx.fillStyle = "#ffffffcc"
+        ctx.fill()
+
+        if (hasBorder) {
+          ctx.strokeStyle = borderColor
+          ctx.lineWidth = borderWidth
+          ctx.stroke()
+        }
+
+        ctx.restore()
+        break
+      }
+
+      case "check": {
+        // Draw a checkmark with a glowing effect and pulse
+        ctx.save()
+        ctx.shadowColor = color
+        ctx.shadowBlur = 15
+
+        // Optional pulse animation
+        // const pulse = 1 + 0.05 * Math.sin(Date.now() * 0.005)
+        // ctx.translate(x, effectiveY)
+        // ctx.scale(pulse, pulse)
+        // ctx.translate(-x, -effectiveY)
+
+        ctx.beginPath()
+        ctx.moveTo(x - effectiveSize * 0.8, effectiveY)
+        ctx.lineTo(x - effectiveSize * 0.2, effectiveY + effectiveSize * 0.8)
+        ctx.lineTo(x + effectiveSize * 0.8, effectiveY - effectiveSize * 0.8)
+        ctx.lineWidth = effectiveSize * 0.3
+        ctx.strokeStyle = color
+        ctx.stroke()
+
+        // Glow effect
+        const checkGradient = ctx.createRadialGradient(x, effectiveY, 0, x, effectiveY, effectiveSize)
+        checkGradient.addColorStop(0, "#ffffffcc")
+        checkGradient.addColorStop(1, `${color}66`)
+        ctx.beginPath()
+        ctx.arc(x, effectiveY, effectiveSize * 0.4, 0, Math.PI * 2)
+        ctx.fillStyle = checkGradient
+        ctx.fill()
+
+        if (hasBorder) {
+          ctx.strokeStyle = borderColor
+          ctx.lineWidth = borderWidth
+          ctx.stroke()
+        }
+
+        ctx.restore()
+        break
+      }
+
+      case "x-mark": {
+        // Draw an X with a glowing cross and pulse
+        ctx.save()
+        ctx.shadowColor = color
+        ctx.shadowBlur = 15
+
+        // Optional pulse animation
+        // const pulse = 1 + 0.05 * Math.sin(Date.now() * 0.005)
+        // ctx.translate(x, effectiveY)
+        // ctx.scale(pulse, pulse)
+        // ctx.translate(-x, -effectiveY)
+
+        ctx.beginPath()
+        ctx.moveTo(x - effectiveSize * 0.8, effectiveY - effectiveSize * 0.8)
+        ctx.lineTo(x + effectiveSize * 0.8, effectiveY + effectiveSize * 0.8)
+        ctx.moveTo(x + effectiveSize * 0.8, effectiveY - effectiveSize * 0.8)
+        ctx.lineTo(x - effectiveSize * 0.8, effectiveY + effectiveSize * 0.8)
+        ctx.lineWidth = effectiveSize * 0.3
+        ctx.strokeStyle = color
+        ctx.stroke()
+
+        // Central glow
+        const xMarkGradient = ctx.createRadialGradient(x, effectiveY, 0, x, effectiveY, effectiveSize * 0.5)
+        xMarkGradient.addColorStop(0, "#ffffffcc")
+        xMarkGradient.addColorStop(1, `${color}66`)
+        ctx.beginPath()
+        ctx.arc(x, effectiveY, effectiveSize * 0.3, 0, Math.PI * 2)
+        ctx.fillStyle = xMarkGradient
+        ctx.fill()
+
+        if (hasBorder) {
+          ctx.strokeStyle = borderColor
+          ctx.lineWidth = borderWidth
+          ctx.stroke()
+        }
+
+        ctx.restore()
+        break
+      }
+
+      case "bookmark": {
+        // Draw a bookmark with a glowing ribbon and star pulse
+        ctx.save()
+        ctx.shadowColor = color
+        ctx.shadowBlur = 20
+
+        // Optional pulse animation for star
+        // const pulse = 1 + 0.05 * Math.sin(Date.now() * 0.005)
+        // ctx.translate(x, effectiveY - effectiveSize * 0.8)
+        // ctx.scale(pulse, pulse)
+        // ctx.translate(-x, -(effectiveY - effectiveSize * 0.8))
+
+        ctx.beginPath()
+        ctx.moveTo(x - effectiveSize * 0.8, effectiveY - effectiveSize * 1.5)
+        ctx.lineTo(x - effectiveSize * 0.8, effectiveY + effectiveSize * 0.5)
+        ctx.lineTo(x, effectiveY + effectiveSize * 0.8)
+        ctx.lineTo(x + effectiveSize * 0.8, effectiveY + effectiveSize * 0.5)
+        ctx.lineTo(x + effectiveSize * 0.8, effectiveY - effectiveSize * 1.5)
+        ctx.closePath()
+
+        const bookmarkGradient = ctx.createLinearGradient(
+          x,
+          effectiveY - effectiveSize * 1.5,
+          x,
+          effectiveY + effectiveSize * 0.8,
+        )
+        bookmarkGradient.addColorStop(0, `${color}ff`)
+        bookmarkGradient.addColorStop(1, `${color}99`)
+        ctx.fillStyle = bookmarkGradient
+        ctx.fill()
+
+        // Star detail
+        ctx.beginPath()
+        ctx.moveTo(x, effectiveY - effectiveSize * 0.8)
+        for (let i = 0; i < 5; i++) {
+          const angle = (i * Math.PI * 2) / 5 - Math.PI / 2
+          const radius = i % 2 === 0 ? effectiveSize * 0.3 : effectiveSize * 0.15
+          ctx.lineTo(x + Math.cos(angle) * radius, effectiveY - effectiveSize * 0.8 + Math.sin(angle) * radius)
+        }
+        ctx.closePath()
+        ctx.fillStyle = "#ffffffcc"
+        ctx.fill()
+
+        if (hasBorder) {
+          ctx.strokeStyle = borderColor
+          ctx.lineWidth = borderWidth
+          ctx.stroke()
+        }
+
+        ctx.restore()
+        break
+      }
+
+      // ... other cases ...
+
       case "heart":
         // Draw a circle background for icon
         ctx.beginPath()
@@ -1116,6 +1736,11 @@ export default function GeoMap({
           ctx.lineTo(x - effectiveSize * 0.5, effectiveY)
           ctx.lineTo(x - effectiveSize * 0.5, effectiveY + effectiveSize * 0.5)
           ctx.lineTo(x + effectiveSize * 0.5, effectiveY + effectiveSize * 0.5)
+          ctx.lineTo(x + effectiveSize * 0.5, effectiveY)
+          ctx.lineTo(x + effectiveSize * 0.7, effectiveY)
+          ctx.closePath()
+          ctx.fill()
+        } else if (shape === "heart") {
           ctx.lineTo(x + effectiveSize * 0.5, effectiveY)
           ctx.lineTo(x + effectiveSize * 0.7, effectiveY)
           ctx.closePath()
@@ -1238,6 +1863,10 @@ export default function GeoMap({
     if (marker.label) {
       const labelSize = marker.labelSize || 12
       const labelColor = marker.labelColor || "#ffffff"
+      const labelFont = marker.labelFont || "Arial"
+      const labelBold = marker.labelBold ? "bold " : ""
+      const labelItalic = marker.labelItalic ? "italic " : ""
+      const labelOpacity = marker.labelOpacity !== undefined ? marker.labelOpacity : 1.0
 
       // Set label position based on the labelPosition property
       let labelX = x
@@ -1270,17 +1899,63 @@ export default function GeoMap({
           break
       }
 
-      ctx.font = `${labelSize}px Arial`
-      ctx.fillStyle = labelColor
+      // Set up text rendering with high quality settings
       ctx.textAlign = textAlign as CanvasTextAlign
       ctx.textBaseline = textBaseline as CanvasTextBaseline
-      ctx.shadowColor = "rgba(0, 0, 0, 0.7)"
-      ctx.shadowBlur = 3
-      ctx.shadowOffsetX = 1
-      ctx.shadowOffsetY = 1
+      ctx.font = `${labelBold}${labelItalic}${labelSize}px ${labelFont}`
+
+      // First draw a solid background/halo around the text for maximum contrast
+      ctx.lineWidth = 5
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.9)"
+      ctx.lineJoin = "round"
+      ctx.miterLimit = 2
+      ctx.strokeText(marker.label, labelX, labelY)
+
+      // Then draw a second, lighter outline
+      ctx.lineWidth = 3
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.7)"
+      ctx.strokeText(marker.label, labelX, labelY)
+
+      // Draw the main text with full opacity regardless of the opacity setting
+      // This ensures the text itself is always clear
+      ctx.fillStyle = labelColor
+      ctx.globalAlpha = 1.0
       ctx.fillText(marker.label, labelX, labelY)
+
+      // Draw underline if enabled
+      if (marker.labelUnderline) {
+        const textWidth = ctx.measureText(marker.label).width
+        const underlineY = labelY + (textBaseline === "top" ? labelSize + 3 : 3)
+
+        ctx.beginPath()
+        ctx.lineWidth = Math.max(2, labelSize / 6) // Thicker underline for better visibility
+
+        if (textAlign === "center") {
+          ctx.moveTo(labelX - textWidth / 2, underlineY)
+          ctx.lineTo(labelX + textWidth / 2, underlineY)
+        } else if (textAlign === "right") {
+          ctx.moveTo(labelX, underlineY)
+          ctx.lineTo(labelX - textWidth, underlineY)
+        } else {
+          ctx.moveTo(labelX, underlineY)
+          ctx.lineTo(labelX + textWidth, underlineY)
+        }
+
+        // Draw a thicker black underline first for contrast
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.8)"
+        ctx.lineWidth = Math.max(3, labelSize / 5)
+        ctx.stroke()
+
+        // Then draw the colored underline on top
+        ctx.strokeStyle = labelColor
+        ctx.lineWidth = Math.max(2, labelSize / 6)
+        ctx.stroke()
+      }
+
+      // Reset shadow and opacity
       ctx.shadowColor = "transparent"
       ctx.shadowBlur = 0
+      ctx.globalAlpha = 1.0
     }
 
     // Reset global alpha and shadow
@@ -1291,7 +1966,20 @@ export default function GeoMap({
     ctx.shadowOffsetY = 0
   }
 
-  function drawBasemapBackground(ctx: CanvasRenderingContext2D, width: number, height: number, basemap: string) {
+  function drawBasemapBackground(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    basemap: string,
+    customBgColor?: string,
+  ) {
+    // If a custom background color is provided, use it
+    if (customBgColor) {
+      ctx.fillStyle = customBgColor
+      ctx.fillRect(0, 0, width, height)
+      return
+    }
+
     // Use cached map tiles if available
     if (mapImageCache.current.has(basemap)) {
       const img = mapImageCache.current.get(basemap)!
@@ -1655,87 +2343,87 @@ export default function GeoMap({
 
   return (
     <Card className={`overflow-hidden border-primary/20 ${className || ""}`}>
-  <CardContent className="p-0 relative">
-    {features.length === 0 ? (
-      <div className="w-full h-[600px] flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="text-center"
-        >
-          <motion.div
-            className="w-24 h-24 mx-auto mb-4 rounded-full bg-blue-500/20 flex items-center justify-center"
-            animate={{
-              scale: [1, 1.1, 1],
-              backgroundColor: ["rgba(59, 130, 246, 0.2)", "rgba(59, 130, 246, 0.3)", "rgba(59, 130, 246, 0.2)"],
-            }}
-            transition={{ repeat: Number.POSITIVE_INFINITY, duration: 9 }}
-          >
-            <MapPin className="h-12 w-12 text-blue-500" />
-          </motion.div>
-          <h3 className="text-xl font-bold text-white mb-2">No Areas Selected</h3>
-          <p className="text-gray-400 max-w-md">
-            Select regions, zones, or woredas from the selection panels to visualize them on the map.
-          </p>
-        </motion.div>
-      </div>
-    ) : (
-      <>
-        <canvas
-          ref={canvasRef}
-          width={800}
-          height={600}
-          className={`w-full h-full cursor-${isPanning ? "grabbing" : "pointer"}`}
-          onMouseMove={handleMouseMove}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={() => {
-            setHoveredFeature(null);
-            setIsPanning(false);
-          }}
-          onClick={handleClick}
-          onContextMenu={(e) => e.preventDefault()}
-        />
+      <CardContent className="p-0 relative">
+        {features.length === 0 ? (
+          <div className="w-full h-[600px] flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+              className="text-center"
+            >
+              <motion.div
+                className="w-24 h-24 mx-auto mb-4 rounded-full bg-blue-500/20 flex items-center justify-center"
+                animate={{
+                  scale: [1, 1.1, 1],
+                  backgroundColor: ["rgba(59, 130, 246, 0.2)", "rgba(59, 130, 246, 0.3)", "rgba(59, 130, 246, 0.2)"],
+                }}
+                transition={{ repeat: Number.POSITIVE_INFINITY, duration: 9 }}
+              >
+                <MapPin className="h-12 w-12 text-blue-500" />
+              </motion.div>
+              <h3 className="text-xl font-bold text-white mb-2">No Areas Selected</h3>
+              <p className="text-gray-400 max-w-md">
+                Select regions, zones, or woredas from the selection panels to visualize them on the map.
+              </p>
+            </motion.div>
+          </div>
+        ) : (
+          <>
+            <canvas
+              ref={canvasRef}
+              width={800}
+              height={600}
+              className={`w-full h-full cursor-${isPanning ? "grabbing" : "pointer"}`}
+              onMouseMove={handleMouseMove}
+              onMouseDown={handleMouseDown}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={() => {
+                setHoveredFeature(null)
+                setIsPanning(false)
+              }}
+              onClick={handleClick}
+              onContextMenu={(e) => e.preventDefault()}
+            />
 
-        {hoveredFeature && showTooltips && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="absolute bg-card p-2 rounded shadow-md text-sm z-10 pointer-events-none border border-primary/20"
-            style={{
-              left: mousePosition.x + 10,
-              top: mousePosition.y + 10,
-              maxWidth: "200px",
-            }}
-          >
-            <strong>{hoveredFeature.properties.name}</strong>
-            <div className="text-xs text-muted-foreground">{hoveredFeature.properties.code}</div>
-          </motion.div>
+            {hoveredFeature && showTooltips && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="absolute bg-card p-2 rounded shadow-md text-sm z-10 pointer-events-none border border-primary/20"
+                style={{
+                  left: mousePosition.x + 10,
+                  top: mousePosition.y + 10,
+                  maxWidth: "200px",
+                }}
+              >
+                <strong>{hoveredFeature.properties.name}</strong>
+                <div className="text-xs text-muted-foreground">{hoveredFeature.properties.code}</div>
+              </motion.div>
+            )}
+          </>
         )}
-      </>
-    )}
 
-    {/* Zoom and pan controls */}
-    <div className="absolute bottom-4 right-4 flex flex-col gap-2">
-    <Button
-        variant="secondary"
-        size="icon"
-        className="rounded-full bg-black/50 hover:bg-black/70"
-        onClick={() => setZoomLevel((prev) => Math.min(prev * 1.2, 5))}
-      >
-        <Plus className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="secondary"
-        size="icon"
-        className="rounded-full bg-black/50 hover:bg-black/70"
-        onClick={() => setZoomLevel((prev) => Math.max(prev / 1.2, 0.5))}
-      >
-        <Minus className="h-4 w-4" />
-      </Button>
-    </div>
-  </CardContent>
-</Card>
+        {/* Zoom and pan controls */}
+        <div className="absolute bottom-4 right-4 flex flex-col gap-2">
+          <Button
+            variant="secondary"
+            size="icon"
+            className="rounded-full bg-black/50 hover:bg-black/70"
+            onClick={() => setZoomLevel((prev) => Math.min(prev * 1.2, 5))}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="rounded-full bg-black/50 hover:bg-black/70"
+            onClick={() => setZoomLevel((prev) => Math.max(prev / 1.2, 0.5))}
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

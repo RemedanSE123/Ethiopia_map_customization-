@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { StepIndicator } from "@/components/step-indicator"
 import GeoMap from "@/components/geo-map"
 import Step2Customize from "@/components/step2-customize"
-import { ArrowLeft, ArrowRight } from "lucide-react"
+import { ArrowLeft, ArrowRight, MapPin,  Building, ArrowUp } from "lucide-react"
 import type { GeoFeature } from "@/types/geo-types"
 import { motion } from "framer-motion"
 
@@ -85,7 +85,7 @@ export default function CustomizePage() {
       color: "#000000",
     },
     background: "#f8f9fa",
-    showLabels: true,
+    showLabels: false,
     showTooltips: true,
     basemap: "dark",
     markers: [],
@@ -124,31 +124,46 @@ export default function CustomizePage() {
     // Store customization options
     if (selectedData) {
       localStorage.setItem("mapCustomization", JSON.stringify(mapCustomization))
-      router.push("/data")
+      router.push("/metadata")
     }
   }
 
   const updateMapCustomization = (key: string, value: any) => {
     setMapCustomization((prev) => {
-      const newState = { ...prev }
-
+      const newState = { ...prev };
+  
       // Handle nested properties
       if (key.includes(".")) {
-        const [parent, child] = key.split(".") as [keyof MapCustomization, string]
+        const [parent, child] = key.split(".") as [keyof MapCustomization, string];
         if (typeof newState[parent] === "object" && newState[parent] !== null) {
-          // Create a new object for the parent to ensure state immutability
           newState[parent] = {
             ...(newState[parent] as Record<string, any>),
             [child]: value,
-          } as never
+          } as never;
         }
       } else {
-        newState[key as keyof MapCustomization] = value as never
+        newState[key as keyof MapCustomization] = value as never;
       }
-
-      return newState
-    })
-  }
+  
+      // Sync basemap with dataLayers
+      if (key === "basemap") {
+        const updatedDataLayers = [
+          {
+            id: value,
+            name: value.charAt(0).toUpperCase() + value.slice(1), // e.g., "Streets"
+            description: `Basemap: ${value}`,
+            iconName: "map",
+            enabled: true,
+            category: "basemap",
+            type: "basemap",
+          },
+        ];
+        localStorage.setItem("dataLayers", JSON.stringify(updatedDataLayers));
+      }
+  
+      return newState;
+    });
+  };
 
   const handleFeatureClick = (feature: GeoFeature) => {
     // Only set selected feature if in colors tab
@@ -290,11 +305,91 @@ export default function CustomizePage() {
               onFeatureClick={handleFeatureClick}
               onMapClick={handleMapClick}
               highlightedFeature={selectedFeature}
-              className="h-[600px]"
+              className="h-[615px]"
               step={2}
               activeTab={activeTab}
             />
           </motion.div>
+
+
+
+
+
+
+              {/* Advanced Marker Features (Updated) */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 1.1 }}
+                className="flex-1 min-w-[200px]"
+              >
+                <Card className="border-primary/20 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="text-sm">Advanced Marker Features</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Enhance your markers with special effects and customizations:
+                    </p>
+                    <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
+                      <li>
+                        <strong>Animation Effects:</strong> Add pulse, bounce, or glow effects to draw attention to important
+                        markers
+                      </li>
+                      <li>
+                        <strong>Rotation & Scale:</strong> Adjust the orientation and size of markers for better visibility
+                      </li>
+                      <li>
+                        <strong>Custom Styling:</strong> Add borders, shadows, and other visual enhancements
+                      </li>
+                      <li>
+                        <strong>Label Positioning:</strong> Place labels in optimal positions based on map content
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+            
+
+
+
+
+  {/* Advanced Marker Features (Updated) */}
+  <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 1.1 }}
+                className="flex-1 min-w-[200px]"
+              >
+                <Card className="border-primary/20 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="text-sm">Advanced Marker Features</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Enhance your markers with special effects and customizations:
+                    </p>
+                    <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
+                      <li>
+                        <strong>Animation Effects:</strong> Add pulse, bounce, or glow effects to draw attention to important
+                        markers
+                      </li>
+                      <li>
+                        <strong>Rotation & Scale:</strong> Adjust the orientation and size of markers for better visibility
+                      </li>
+                      <li>
+                        <strong>Custom Styling:</strong> Add borders, shadows, and other visual enhancements
+                      </li>
+                      <li>
+                        <strong>Label Positioning:</strong> Place labels in optimal positions based on map content
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
