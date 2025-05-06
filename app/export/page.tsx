@@ -122,6 +122,9 @@ export default function ExportPage() {
   }
 
   const getActiveBasemap = (): string => {
+    if (mapCustomization?.basemap) {
+      return mapCustomization.basemap
+    }
     const activeBasemap = dataLayers.find((layer) => layer.category === "basemap" && layer.enabled)
     return activeBasemap ? activeBasemap.id : "streets"
   }
