@@ -1,69 +1,68 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Slider } from "@/components/ui/slider"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Palette, PenTool, Layers, RotateCcw, MapPin, Info } from "lucide-react"
-import { MarkerEditor } from "@/components/marker-editor"
-import type { GeoFeature } from "@/types/geo-types"
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Palette, PenTool, Layers, RotateCcw, MapPin } from "lucide-react";
+import { MarkerEditor } from "@/components/marker-editor";
+import type { GeoFeature } from "@/types/geo-types";
 
-// Update the MapCustomization interface to include label customization
 interface Step2CustomizeProps {
   selectedData: {
-    regions: { code: string; name: string }[]
-    zones: { code: string; name: string }[]
-    woredas: { code: string; name: string }[]
-    features: GeoFeature[]
-  }
+    regions: { code: string; name: string }[];
+    zones: { code: string; name: string }[];
+    woredas: { code: string; name: string }[];
+    features: GeoFeature[];
+  };
   mapCustomization: {
     colors: {
-      region: string
-      zone: string
-      woreda: string
-    }
-    featureColors: Record<string, string>
-    featureOpacity?: Record<string, number>
+      region: string;
+      zone: string;
+      woreda: string;
+    };
+    featureColors: Record<string, string>;
+    featureOpacity?: Record<string, number>;
     opacity: {
-      region: number
-      zone: number
-      woreda: number
-    }
+      region: number;
+      zone: number;
+      woreda: number;
+    };
     borders: {
-      width: number
-      style: string
-      color: string
-    }
-    background: string
-    showLabels: boolean
-    showTooltips: boolean
-    basemap: string
+      width: number;
+      style: string;
+      color: string;
+    };
+    background: string;
+    showLabels: boolean;
+    showTooltips: boolean;
+    basemap: string;
     markers: Array<{
-      lat: number
-      lng: number
-      color: string
-      size: number
-      opacity?: number
-      label?: string
-      labelColor?: string
-      labelSize?: number
-      shape?: "pin" | "circle" | "square" | "triangle" | "hexagon" | "polygon" | "line"
-      points?: Array<{ lat: number; lng: number }>
-    }>
-  }
-  updateMapCustomization: (key: string, value: any) => void
-  onFeatureClick: (feature: GeoFeature) => void
-  clickPosition: { lat: number; lng: number } | null
-  selectedFeature: string | null
-  setSelectedFeature: (feature: string | null) => void
-  activeTab: string
-  setActiveTab: (tab: string) => void
-  setClickPosition: (position: { lat: number; lng: number } | null) => void
+      lat: number;
+      lng: number;
+      color: string;
+      size: number;
+      opacity?: number;
+      label?: string;
+      labelColor?: string;
+      labelSize?: number;
+      shape?: "pin" | "circle" | "square" | "triangle" | "hexagon" | "polygon" | "line";
+      points?: Array<{ lat: number; lng: number }>;
+    }>;
+  };
+  updateMapCustomization: (key: string, value: any) => void;
+  onFeatureClick: (feature: GeoFeature) => void;
+  clickPosition: { lat: number; lng: number } | null;
+  selectedFeature: string | null;
+  setSelectedFeature: (feature: string | null) => void;
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+  setClickPosition: (position: { lat: number; lng: number } | null) => void;
 }
 
 export default function Step2Customize({
@@ -78,116 +77,116 @@ export default function Step2Customize({
   setActiveTab,
   setClickPosition,
 }: Step2CustomizeProps) {
-  const [selectedFeatureType, setSelectedFeatureType] = useState<"region" | "zone" | "woreda" | null>(null)
-  const [selectedFeatureName, setSelectedFeatureName] = useState<string | null>(null)
+  const [selectedFeatureType, setSelectedFeatureType] = useState<"region" | "zone" | "woreda" | null>(null);
+  const [selectedFeatureName, setSelectedFeatureName] = useState<string | null>(null);
+
+  // Check if regions, zones, or woredas are selected
+  const hasRegions = selectedData.regions.length > 0;
+  const hasZones = selectedData.zones.length > 0;
+  const hasWoredas = selectedData.woredas.length > 0;
 
   // Effect to update the selected feature info when it changes
   useEffect(() => {
     if (selectedFeature) {
-      // Find the feature in the data
-      const feature = selectedData.features.find((f) => f.properties.code === selectedFeature)
+      const feature = selectedData.features.find((f) => f.properties.code === selectedFeature);
       if (feature) {
-        setSelectedFeatureType(feature.properties.level || getFeatureLevelFromCode(feature.properties.code))
-        setSelectedFeatureName(feature.properties.name)
+        setSelectedFeatureType(feature.properties.level || getFeatureLevelFromCode(feature.properties.code));
+        setSelectedFeatureName(feature.properties.name);
       }
     } else {
-      setSelectedFeatureType(null)
-      setSelectedFeatureName(null)
+      setSelectedFeatureType(null);
+      setSelectedFeatureName(null);
     }
-  }, [selectedFeature, selectedData.features])
+  }, [selectedFeature, selectedData.features]);
 
   // Effect to clear selected feature when changing tabs
   useEffect(() => {
     if (activeTab !== "colors") {
-      setSelectedFeature(null)
+      setSelectedFeature(null);
     }
-  }, [activeTab, setSelectedFeature])
+  }, [activeTab, setSelectedFeature]);
 
   const getFeatureLevelFromCode = (code: string): "region" | "zone" | "woreda" => {
-    if (code.startsWith("ET") && code.length === 3) return "region" // Region
-    if (code.length === 5) return "zone" // Zone
-    return "woreda" // Woreda
-  }
+    if (code.startsWith("ET") && code.length === 3) return "region";
+    if (code.length === 5) return "zone";
+    return "woreda";
+  };
 
   const updateFeatureColor = (color: string) => {
     if (selectedFeature) {
       const newFeatureColors = {
         ...mapCustomization.featureColors,
         [selectedFeature]: color,
-      }
-      updateMapCustomization("featureColors", newFeatureColors)
+      };
+      updateMapCustomization("featureColors", newFeatureColors);
     }
-  }
+  };
 
   const updateFeatureOpacity = (opacity: number) => {
     if (selectedFeature) {
       const newFeatureOpacity = {
         ...mapCustomization.featureOpacity,
         [selectedFeature]: opacity,
-      }
-      updateMapCustomization("featureOpacity", newFeatureOpacity)
+      };
+      updateMapCustomization("featureOpacity", newFeatureOpacity);
     }
-  }
+  };
 
   const resetFeatureColor = () => {
     if (selectedFeature) {
-      // Create new objects without the selected feature
-      const newFeatureColors = { ...mapCustomization.featureColors }
-      const newFeatureOpacity = { ...mapCustomization.featureOpacity }
+      const newFeatureColors = { ...mapCustomization.featureColors };
+      const newFeatureOpacity = { ...mapCustomization.featureOpacity };
 
-      // Delete the properties for this feature
-      delete newFeatureColors[selectedFeature]
-      delete newFeatureOpacity[selectedFeature]
+      delete newFeatureColors[selectedFeature];
+      delete newFeatureOpacity[selectedFeature];
 
-      // Update both at once
-      updateMapCustomization("featureColors", newFeatureColors)
-      updateMapCustomization("featureOpacity", newFeatureOpacity)
+      updateMapCustomization("featureColors", newFeatureColors);
+      updateMapCustomization("featureOpacity", newFeatureOpacity);
     }
-  }
+  };
 
-  // Update the resetAllCustomizations function to include label customization defaults
   const resetAllCustomizations = () => {
     updateMapCustomization("colors", {
-      region: "#1a73e8", // Blue
-      zone: "#34a853", // Green
-      woreda: "#ea4335", // Red
-    })
-    updateMapCustomization("featureColors", {})
-    updateMapCustomization("featureOpacity", {})
+      region: "#1a73e8",
+      zone: "#34a853",
+      woreda: "#ea4335",
+    });
+    updateMapCustomization("featureColors", {});
+    updateMapCustomization("featureOpacity", {});
     updateMapCustomization("opacity", {
       region: 0.7,
       zone: 0.7,
       woreda: 0.7,
-    })
+    });
     updateMapCustomization("borders", {
       width: 1,
       style: "solid",
       color: "#000000",
-    })
-    updateMapCustomization("background", "#f8f9fa")
-    updateMapCustomization("showLabels", true)
-    updateMapCustomization("showTooltips", true)
-    updateMapCustomization("basemap", "dark")
-    updateMapCustomization("markers", [])
-    setSelectedFeature(null)
-  }
+    });
+    updateMapCustomization("background", "#f8f9fa");
+    updateMapCustomization("showLabels", true);
+    updateMapCustomization("showTooltips", true);
+    updateMapCustomization("basemap", "dark");
+    updateMapCustomization("markers", []);
+    setSelectedFeature(null);
+  };
 
   const handleAddMarker = (marker: any) => {
-    updateMapCustomization("markers", [...mapCustomization.markers, marker])
-  }
+    updateMapCustomization("markers", [...mapCustomization.markers, marker]);
+  };
 
   const handleUpdateMarker = (index: number, marker: any) => {
-    const newMarkers = [...mapCustomization.markers]
-    newMarkers[index] = marker
-    updateMapCustomization("markers", newMarkers)
-  }
+    const newMarkers = [...mapCustomization.markers];
+    newMarkers[index] = marker;
+    updateMapCustomization("markers", newMarkers);
+  };
 
   const handleRemoveMarker = (index: number) => {
     updateMapCustomization(
       "markers",
       mapCustomization.markers.filter((_: any, i: number) => i !== index),
-    )
-  }
+    );
+  };
 
   return (
     <Card className="border-primary/20 shadow-lg">
@@ -292,106 +291,116 @@ export default function Step2Customize({
               </div>
             ) : (
               <div className="space-y-4">
-               
+                {hasRegions && (
+                  <>
+                    <div>
+                      <Label className="block text-sm font-medium mb-1">Region Default Color</Label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={mapCustomization.colors.region}
+                          onChange={(e) => {
+                            const newColors = { ...mapCustomization.colors, region: e.target.value };
+                            updateMapCustomization("colors", newColors);
+                          }}
+                          className="w-10 h-10 rounded cursor-pointer"
+                        />
+                        <Input
+                          value={mapCustomization.colors.region}
+                          onChange={(e) => updateMapCustomization("colors.region", e.target.value)}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
 
-                <div>
-                  <Label className="block text-sm font-medium mb-1">Region Default Color</Label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={mapCustomization.colors.region}
-                      onChange={(e) => {
-                        const newColors = { ...mapCustomization.colors, region: e.target.value }
-                        updateMapCustomization("colors", newColors)
-                      }}
-                      className="w-10 h-10 rounded cursor-pointer"
-                    />
-                    <Input
-                      value={mapCustomization.colors.region}
-                      onChange={(e) => updateMapCustomization("colors.region", e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
+                    <div>
+                      <Label className="block text-sm font-medium mb-1">
+                        Region Opacity: {Math.round(mapCustomization.opacity.region * 100)}%
+                      </Label>
+                      <Slider
+                        value={[mapCustomization.opacity.region]}
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        onValueChange={(value) => updateMapCustomization("opacity.region", value[0])}
+                      />
+                    </div>
+                  </>
+                )}
 
-                <div>
-                  <Label className="block text-sm font-medium mb-1">Zone Default Color</Label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={mapCustomization.colors.zone}
-                      onChange={(e) => {
-                        const newColors = { ...mapCustomization.colors, zone: e.target.value }
-                        updateMapCustomization("colors", newColors)
-                      }}
-                      className="w-10 h-10 rounded cursor-pointer"
-                    />
-                    <Input
-                      value={mapCustomization.colors.zone}
-                      onChange={(e) => updateMapCustomization("colors.zone", e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
+                {hasZones && (
+                  <>
+                    <div>
+                      <Label className="block text-sm font-medium mb-1">Zone Default Color</Label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={mapCustomization.colors.zone}
+                          onChange={(e) => {
+                            const newColors = { ...mapCustomization.colors, zone: e.target.value };
+                            updateMapCustomization("colors", newColors);
+                          }}
+                          className="w-10 h-10 rounded cursor-pointer"
+                        />
+                        <Input
+                          value={mapCustomization.colors.zone}
+                          onChange={(e) => updateMapCustomization("colors.zone", e.target.value)}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
 
-                <div>
-                  <Label className="block text-sm font-medium mb-1">Woreda Default Color</Label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={mapCustomization.colors.woreda}
-                      onChange={(e) => {
-                        const newColors = { ...mapCustomization.colors, woreda: e.target.value }
-                        updateMapCustomization("colors", newColors)
-                      }}
-                      className="w-10 h-10 rounded cursor-pointer"
-                    />
-                    <Input
-                      value={mapCustomization.colors.woreda}
-                      onChange={(e) => updateMapCustomization("colors.woreda", e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
+                    <div>
+                      <Label className="block text-sm font-medium mb-1">
+                        Zone Opacity: {Math.round(mapCustomization.opacity.zone * 100)}%
+                      </Label>
+                      <Slider
+                        value={[mapCustomization.opacity.zone]}
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        onValueChange={(value) => updateMapCustomization("opacity.zone", value[0])}
+                      />
+                    </div>
+                  </>
+                )}
 
-                <div>
-                  <Label className="block text-sm font-medium mb-1">
-                    Region Opacity: {Math.round(mapCustomization.opacity.region * 100)}%
-                  </Label>
-                  <Slider
-                    value={[mapCustomization.opacity.region]}
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    onValueChange={(value) => updateMapCustomization("opacity.region", value[0])}
-                  />
-                </div>
+                {hasWoredas && (
+                  <>
+                    <div>
+                      <Label className="block text-sm font-medium mb-1">Woreda Default Color</Label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={mapCustomization.colors.woreda}
+                          onChange={(e) => {
+                            const newColors = { ...mapCustomization.colors, woreda: e.target.value };
+                            updateMapCustomization("colors", newColors);
+                          }}
+                          className="w-10 h-10 rounded cursor-pointer"
+                        />
+                        <Input
+                          value={mapCustomization.colors.woreda}
+                          onChange={(e) => updateMapCustomization("colors.woreda", e.target.value)}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
 
-                <div>
-                  <Label className="block text-sm font-medium mb-1">
-                    Zone Opacity: {Math.round(mapCustomization.opacity.zone * 100)}%
-                  </Label>
-                  <Slider
-                    value={[mapCustomization.opacity.zone]}
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    onValueChange={(value) => updateMapCustomization("opacity.zone", value[0])}
-                  />
-                </div>
-
-                <div>
-                  <Label className="block text-sm font-medium mb-1">
-                    Woreda Opacity: {Math.round(mapCustomization.opacity.woreda * 100)}%
-                  </Label>
-                  <Slider
-                    value={[mapCustomization.opacity.woreda]}
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    onValueChange={(value) => updateMapCustomization("opacity.woreda", value[0])}
-                  />
-                </div>
+                    <div>
+                      <Label className="block text-sm font-medium mb-1">
+                        Woreda Opacity: {Math.round(mapCustomization.opacity.woreda * 100)}%
+                      </Label>
+                      <Slider
+                        value={[mapCustomization.opacity.woreda]}
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        onValueChange={(value) => updateMapCustomization("opacity.woreda", value[0])}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </TabsContent>
@@ -455,10 +464,8 @@ export default function Step2Customize({
               />
             </div>
 
-       
-
             <div>
-              <Label className="block text-sm font-medium mb-1">Map Bcakground</Label>
+              <Label className="block text-sm font-medium mb-1">Map Background</Label>
               <Select
                 value={mapCustomization.basemap}
                 onValueChange={(value) => updateMapCustomization("basemap", value)}
@@ -467,7 +474,7 @@ export default function Step2Customize({
                   <SelectValue placeholder="Select base map" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="streets"> Sky Blue</SelectItem>
+                  <SelectItem value="streets">Sky Blue</SelectItem>
                   <SelectItem value="satellite">Dark Blue</SelectItem>
                   <SelectItem value="dark">Dark Mode</SelectItem>
                   <SelectItem value="light">Light Mode</SelectItem>
@@ -479,8 +486,7 @@ export default function Step2Customize({
 
           <TabsContent value="markers" className="p-4 space-y-6">
             <div className="space-y-2">
-              
-              
+              {/* Marker instructions or additional controls can go here */}
             </div>
 
             <MarkerEditor
@@ -495,5 +501,5 @@ export default function Step2Customize({
         </Tabs>
       </CardContent>
     </Card>
-  )
+  );
 }
